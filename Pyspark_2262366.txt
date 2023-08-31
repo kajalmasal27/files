@@ -92,3 +92,31 @@ query: StreamingQuery = words_with_timestamp.writeStream \
     .start()
 
 query.awaitTermination()
+
+## Assignment 5
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import to_json, struct
+from pyspark.sql.types import StructType, StructField, DoubleType, TimestampType
+
+# Create a Spark session
+spark = SparkSession.builder.appName("KafkaWriter").getOrCreate()
+
+# Define schema for the data
+schema = StructType([
+    StructField("timestamp", TimestampType()),
+    StructField("value", DoubleType())
+])
+
+# Create a streaming DataFrame from the Rate source
+rateDF = spark.readStream.format("rate").option("rowsPerSecond", 5).load()
+
+# Transform the data and write to Kafka
+query = rateDF.selectExpr("timestamp AS key", "to_json(struct(*)) AS value") \
+    .writeStream.format("kafka") \
+    .option("kafka.bootstrap.servers", "localhost:9092") \
+    .option("topic", "topic1") \
+    .option("checkpointLocation", "/tmp/checkpoint") \
+    .start()
+
+query.awaitTermination()
