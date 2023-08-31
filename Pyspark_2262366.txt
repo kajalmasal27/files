@@ -68,3 +68,27 @@ monthly_sales.show()
 
 ## Assignment 4
 
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import current_timestamp
+from pyspark.sql.streaming import StreamingQuery
+
+# Create a Spark session
+spark = SparkSession.builder.appName("WordStream").getOrCreate()
+
+# Create a DataFrame representing the stream of input lines from socket
+lines = spark.readStream.format("socket").option("host", "localhost").option("port", 9999).load()
+
+# Split the lines into words
+words = lines.selectExpr("explode(split(value, ' ')) as word")
+
+# Add timestamp to each word
+words_with_timestamp = words.withColumn("timestamp", current_timestamp())
+
+# Display the word and its corresponding timestamp on the console
+query: StreamingQuery = words_with_timestamp.writeStream \
+    .outputMode("append") \
+    .format("console") \
+    .trigger(processingTime="5 seconds") \
+    .start()
+
+query.awaitTermination()
