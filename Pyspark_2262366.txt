@@ -9,32 +9,33 @@ for make, avg_weight in output:
 
 ## Assignment 2:
 
-import pyspark
 from pyspark.sql import SparkSession
 
 # Create a Spark session
-spark = SparkSession.builder.appName("TopProductsByVolumeSQL").getOrCreate()
+spark = SparkSession.builder.appName("TopProductsByVolume").getOrCreate()
 
 # Read the CSV file
-data = spark.read.csv("/FileStore/tables/OnlineRetail-1.csv", header="True", inferSchema="True")
+file_path = "/FileStore/tables/OnlineRetail-1.csv"
+data = spark.read.csv(file_path, header=True, inferSchema=True)
 
-# Create a temporary view to use SQL queries
+# Create a temporary SQL table
 data.createOrReplaceTempView("online_retail")
 
-# Run SQL query to get the top 25 products with highest monthly sales by volume
-top_products_query = """
-    SELECT StockCode, LEFT(InvoiceDate, 7) AS InvoiceMonth, SUM(Quantity) AS TotalQuantity
+# Run Spark SQL query to get the top products by volume
+query = """
+    SELECT StockCode, SUBSTRING(InvoiceDate, 7, 4) || '-' || SUBSTRING(InvoiceDate, 1, 2) AS InvoiceMonth,
+           SUM(Quantity) AS TotalQuantity
     FROM online_retail
-    WHERE InvoiceDate IS NOT NULL
     GROUP BY StockCode, InvoiceMonth
     ORDER BY TotalQuantity DESC
     LIMIT 25
 """
 
-top_products_df = spark.sql(top_products_query)
+result = spark.sql(query)
 
 # Show the results
-top_products_df.show()
+result.show()
+
 
 
 
