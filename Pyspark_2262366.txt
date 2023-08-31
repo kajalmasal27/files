@@ -1,4 +1,4 @@
-Assignment 1:
+## Assignment 1:
 
 from pyspark import SparkContext
 sc = SparkContext("local", "AverageWeight")
@@ -7,5 +7,33 @@ output = avg_rdd.collect()
 for make, avg_weight in output: 
 	print(f"({make}, {avg_weight})")
 
-Assignment 2:
+## Assignment 2:
+
+## Assignment 3
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+
+# Create a Spark session
+spark = SparkSession.builder.appName("TotalSaleAnalysis").getOrCreate()
+
+# Read the CSV file
+file_path = "/FileStore/tables/OnlineRetail-1.csv"
+data = spark.read.csv(file_path, header="True", inferSchema="True")
+
+# Preprocess data to calculate sales value and extract year and month
+data = data.withColumn("SalesValue", round(col("Quantity") * col("UnitPrice"), 2))\
+           .withColumn("InvoiceMonth", to_date(col("InvoiceDate"), "M/d/yyyy H:mm").cast("date"))\
+           .filter(year("InvoiceMonth") == 2011)
+
+# Calculate total sale value and total orders per month
+monthly_sales = data.groupBy("InvoiceMonth")\
+                    .agg(round(sum("SalesValue"), 1).alias("TotalSaleValue"),
+                         countDistinct("InvoiceNo").alias("TotalOrders"))\
+                    .sort(col("TotalSaleValue").desc())
+
+# Show the results
+monthly_sales.show()
+
+## Assignment 4
 
