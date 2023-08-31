@@ -9,6 +9,36 @@ for make, avg_weight in output:
 
 ## Assignment 2:
 
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, sum, rank
+from pyspark.sql.window import Window
+
+# Create a Spark session
+spark = SparkSession.builder.appName("TopProductsByVolume").getOrCreate()
+
+# Read the CSV file
+file_path = "/FileStore/tables/OnlineRetail-1.csv"
+data = spark.read.csv(file_path, header="True", inferSchema="True")
+
+# Extract only the date from InvoiceDate and create InvoiceMonth column
+data = data.withColumn("InvoiceMonth", col("InvoiceDate").substr(7, 4) + "-" + col("InvoiceDate").substr(1, 2))
+
+# Calculate total quantity per StockCode and InvoiceMonth
+total_quantity_df = data.groupBy("StockCode", "InvoiceMonth").agg(sum("Quantity").alias("TotalQuantity"))
+
+# Rank products based on TotalQuantity within each month
+window_spec = Window.partitionBy("InvoiceMonth").orderBy(col("TotalQuantity").desc())
+ranked_df = total_quantity_df.withColumn("rank", rank().over(window_spec))
+
+# Filter for top-ranked products in each month
+top_products_df = ranked_df.filter(col("rank") <= 25)
+
+# Select relevant columns and show the results
+top_products_df.select("StockCode", "InvoiceMonth", "TotalQuantity").show()
+
+# Stop the Spark session
+
+
 ## Assignment 3
 
 from pyspark.sql import SparkSession
