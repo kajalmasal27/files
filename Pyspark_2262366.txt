@@ -1,0 +1,11 @@
+Assignment 1:
+
+from pyspark import SparkContext
+sc = SparkContext("local", "AverageWeight")
+avg_rdd = sc.textFile('/FileStore/tables/cars.tsv').map(lambda x: x.split('\t')).filter(lambda x: x[9] == 'American').map(lambda x: (x[0], (int(x[6]), 1))).reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1])).mapValues(lambda x: x[0] // x[1]) 
+output = avg_rdd.collect() 
+for make, avg_weight in output: 
+	print(f"({make}, {avg_weight})")
+
+Assignment 2:
+
